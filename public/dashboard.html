@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fish Monitoring System - Real-time Dashboard</title>
+    
+    <!-- Chart.js for graphs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <!-- Leaflet for GPS tracking -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #e74c3c;
+            animation: pulse 2s infinite;
+            display: inline-block;
+        }
+        
+        .status-indicator.connected {
+            background: #27ae60;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .info-bar {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #7f8c8d;
+            font-size: 0.95em;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+        }
+        
+        .card-title {
+            font-size: 1.2em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .metric-display {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-display::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .metric-label {
+            font-size: 1em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .metric-unit {
+            font-size: 0.5em;
+            opacity: 0.8;
+            margin-left: 5px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin-top: 20px;
+        }
+        
+        .acceleration-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .accel-axis {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+        
+        .accel-axis.x { border-left-color: #e74c3c; }
+        .accel-axis.y { border-left-color: #27ae60; }
+        .accel-axis.z { border-left-color: #3498db; }
+        
+        .accel-label {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .accel-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        #map {
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .control-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #e8eaf6;
+            color: #667eea;
+        }
+        
+        .btn-secondary:hover {
+            background: #d4d7e8;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .data-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .data-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #27ae60;
+        }
+        
+        .pump-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        
+        .pump-status.on {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .pump-status.off {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+        
+        .timestamp {
+            color: #7f8c8d;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .acceleration-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                🐟 Alifia Paus
+                <span class="status-indicator" id="connectionStatus"></span>
+            </h1>
+            <div class="info-bar">
+                <div class="info-item">
+                    <span>📍 Device ID:</span>
+                    <strong id="deviceId">FISH_MON_001</strong>
+                </div>
+                <div class="info-item">
+                    <span>🌐 Status:</span>
+                    <strong id="connectionText">Connecting...</strong>
+                </div>
+                <div class="info-item">
+                    <span>📊 Data Quality:</span>
+                    <strong id="dataQuality">--</strong>
+                </div>
+                <div class="info-item">
+                    <span>⏱️ Last Update:</span>
+                    <strong id="lastUpdate">--</strong>
+                </div>
+                <div class="info-item">
+                    <span>💉 Pump:</span>
+                    <span class="pump-status off" id="pumpStatus">OFF</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alerts Container -->
+        <div id="alertsContainer"></div>
+        
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="card-title">📡 Control Panel</div>
+            <div class="control-buttons">
+                <button class="btn btn-primary" onclick="connectMQTT()">
+                    🔄 Reconnect
+                </button>
+                <button class="btn btn-secondary" onclick="exportData()">
+                    📥 Export Data
+                </button>
+                <button class="btn btn-secondary" onclick="clearCharts()">
+                    🗑️ Clear Charts
+                </button>
+                <button class="btn btn-danger" onclick="emergencyRelease()">
+                    ⚠️ Emergency Release
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Speed Card -->
+            <div class="card">
+                <div class="card-title">
+                    🏊 Swimming Speed
+                </div>
+                <div class="metric-display">
+                    <div class="metric-label">Current Speed</div>
+                    <div class="metric-value">
+                        <span id="speedValue">0.0</span>
+                        <span class="metric-unit">cm/s</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="speedChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Temperature Card -->
+            <div class="card">
+                <div class="card-title">
+                    🌡️ Water Temperature
+                </div>
+                <div class="metric-display" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                    <div class="metric-label">Temperature</div>
+                    <div class="metric-value">
+                        <span id="tempValue">0.0</span>
+                        <span class="metric-unit">°C</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Dissolved Oxygen Card -->
+            <div class="card">
+                <div class="card-title">
+                    💧 Dissolved Oxygen
+                </div>
+                <div class="metric-display" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                    <div class="metric-label">DO Level</div>
+                    <div class="metric-value">
+                        <span id="doValue">0.0</span>
+                        <span class="metric-unit">mg/L</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="doChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Pressure Card -->
+            <div class="card">
+                <div class="card-title">
+                    🎯 Compartment Pressure
+                </div>
+                <div class="metric-display" style="background: linear-gradient(135deg, #fa709a, #fee140);">
+                    <div class="metric-label">Suction Pressure</div>
+                    <div class="metric-value">
+                        <span id="pressureValue">0.0</span>
+                        <span class="metric-unit">kPa</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="pressureChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Acceleration Card -->
+            <div class="card">
+                <div class="card-title">
+                    📐 3-Axis Acceleration
+                </div>
+                <div class="acceleration-grid">
+                    <div class="accel-axis x">
+                        <div class="accel-label">X-Axis</div>
+                        <div class="accel-value" id="accelX">0.00</div>
+                        <div class="metric-unit">g</div>
+                    </div>
+                    <div class="accel-axis y">
+                        <div class="accel-label">Y-Axis</div>
+                        <div class="accel-value" id="accelY">0.00</div>
+                        <div class="metric-unit">g</div>
+                    </div>
+                    <div class="accel-axis z">
+                        <div class="accel-label">Z-Axis</div>
+                        <div class="accel-value" id="accelZ">0.00</div>
+                        <div class="metric-unit">g</div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="accelChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Depth Card -->
+            <div class="card">
+                <div class="card-title">
+                    🌊 Depth & Location
+                </div>
+                <div class="metric-display" style="background: linear-gradient(135deg, #30cfd0, #330867);">
+                    <div class="metric-label">Current Depth</div>
+                    <div class="metric-value">
+                        <span id="depthValue">0.0</span>
+                        <span class="metric-unit">m</span>
+                    </div>
+                </div>
+                <table class="data-table">
+                    <tr>
+                        <td><strong>Latitude:</strong></td>
+                        <td id="latitude">--</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Longitude:</strong></td>
+                        <td id="longitude">--</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Satellites:</strong></td>
+                        <td id="satellites">--</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Map Section -->
+        <div class="card">
+            <div class="card-title">
+                🗺️ GPS Tracking
+            </div>
+            <div id="map"></div>
+        </div>
+        
+        <!-- Historical Data Table -->
+        <div class="card">
+            <div class="card-title">
+                📊 Recent Readings
+            </div>
+            <table class="data-table" id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Speed (cm/s)</th>
+                        <th>Temp (°C)</th>
+                        <th>DO (mg/L)</th>
+                        <th>Pressure (kPa)</th>
+                        <th>Depth (m)</th>
+                        <th>Quality</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center;">Waiting for data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration
+        // GANTI SEMUA NILAI INI SESUAI MQTT BROKER ANDA
+        const MQTT_BROKER = 'http://b8ae5c3ad3484c4fa485c54ae6eb8ca2.s1.eu.hivemq.cloud'; // Ganti dengan alamat broker Anda
+        const MQTT_PORT = 8884; // WebSocket port (8000 untuk public, 8884 untuk HiveMQ Cloud)
+        const MQTT_USERNAME = 'hiupaus'; // Isi dengan username MQTT (kosongkan jika tidak ada)
+        const MQTT_PASSWORD = 'HiuPaus123'; // Isi dengan password MQTT (kosongkan jika tidak ada)
+        const MQTT_USE_SSL = false; // Ganti true jika pakai HiveMQ Cloud
+        const MQTT_TOPIC = 'fish/monitor/data';
+        const MAX_DATA_POINTS = 50;
+        
+        // Global variables
+        let mqttClient = null;
+        let connected = false;
+        let map = null;
+        let marker = null;
+        let pathLine = null;
+        let pathCoordinates = [];
+        
+        // Data storage
+        let historicalData = {
+            timestamps: [],
+            speed: [],
+            temperature: [],
+            dissolvedOxygen: [],
+            pressure: [],
+            depth: [],
+            accelX: [],
+            accelY: [],
+            accelZ: []
+        };
+        
+        // Chart instances
+        let speedChart, tempChart, doChart, pressureChart, accelChart;
+        
+        // Initialize everything on page load
+        window.onload = function() {
+            initializeCharts();
+            initializeMap();
+            connectMQTT();
+            updateTimestamp();
+        };
+        
+        // Initialize all charts
+        function initializeCharts() {
+            // Common chart options
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 750
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        display: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            };
+            
+            // Speed Chart
+            speedChart = new Chart(document.getElementById('speedChart'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            ...commonOptions.scales.y,
+                            title: {
+                                display: true,
+                                text: 'Speed (cm/s)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Temperature Chart
+            tempChart = new Chart(document.getElementById('tempChart'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        borderColor: '#f5576c',
+                        backgroundColor: 'rgba(245, 87, 108, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            ...commonOptions.scales.y,
+                            title: {
+                                display: true,
+                                text: 'Temperature (°C)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // DO Chart
+            doChart = new Chart(document.getElementById('doChart'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        borderColor: '#00f2fe',
+                        backgroundColor: 'rgba(0, 242, 254, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            ...commonOptions.scales.y,
+                            title: {
+                                display: true,
+                                text: 'DO (mg/L)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Pressure Chart
+            pressureChart = new Chart(document.getElementById('pressureChart'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        borderColor: '#fa709a',
+                        backgroundColor: 'rgba(250, 112, 154, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            ...commonOptions.scales.y,
+                            title: {
+                                display: true,
+                                text: 'Pressure (kPa)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Acceleration Chart (3 axes)
+            accelChart = new Chart(document.getElementById('accelChart'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'X-Axis',
+                            data: [],
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Y-Axis',
+                            data: [],
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Z-Axis',
+                            data: [],
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            ...commonOptions.scales.y,
+                            title: {
+                                display: true,
+                                text: 'Acceleration (g)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize Leaflet Map
+        function initializeMap() {
+            // Default center (Indonesia)
+            map = L.map('map').setView([-2.5489, 118.0149], 5);
+            
+            // Add tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Initialize path line
+            pathLine = L.polyline([], {
+                color: '#667eea',
+                weight: 3,
+                opacity: 0.7,
+                smoothFactor: 1
+            }).addTo(map);
+        }
+        
+        // MQTT Connection
+        function connectMQTT() {
+            console.log('Connecting to MQTT broker...');
+            
+            // Create client with random ID
+            const clientId = 'web_' + Math.random().toString(16).substr(2, 8);
+            mqttClient = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, clientId);
+            
+            // Set callbacks
+            mqttClient.onConnectionLost = onConnectionLost;
+            mqttClient.onMessageArrived = onMessageArrived;
+            
+            // Connect options
+            const options = {
+                timeout: 3,
+                onSuccess: onConnect,
+                onFailure: onConnectFailure,
+                useSSL: MQTT_USE_SSL,
+                // Tambahkan username dan password jika ada
+                userName: MQTT_USERNAME.length > 0 ? MQTT_USERNAME : undefined,
+                password: MQTT_PASSWORD.length > 0 ? MQTT_PASSWORD : undefined
+            };
+            
+            mqttClient.connect(options);
+        }
+        
+        function onConnect() {
+            console.log('Connected to MQTT broker');
+            connected = true;
+            updateConnectionStatus(true);
+            
+            // Subscribe to topic
+            mqttClient.subscribe(MQTT_TOPIC);
+            
+            showAlert('Connected to monitoring system', 'success');
+        }
+        
+        function onConnectFailure(error) {
+            console.error('Failed to connect:', error);
+            connected = false;
+            updateConnectionStatus(false);
+            
+            showAlert('Failed to connect. Retrying...', 'danger');
+            
+            // Retry connection after 5 seconds
+            setTimeout(connectMQTT, 5000);
+        }
+        
+        function onConnectionLost(responseObject) {
+            console.log('Connection lost:', responseObject.errorMessage);
+            connected = false;
+            updateConnectionStatus(false);
+            
+            showAlert('Connection lost. Reconnecting...', 'warning');
+            
+            // Attempt to reconnect
+            setTimeout(connectMQTT, 3000);
+        }
+        
+        function onMessageArrived(message) {
+            try {
+                const data = JSON.parse(message.payloadString);
+                console.log('Data received:', data);
+                
+                // Update UI with new data
+                updateDashboard(data);
+                
+                // Store historical data
+                storeData(data);
+                
+                // Update charts
+                updateCharts();
+                
+                // Update map
+                updateMap(data);
+                
+                // Check for alerts
+                checkAlerts(data);
+                
+                // Update table
+                updateDataTable(data);
+                
+            } catch (error) {
+                console.error('Error processing message:', error);
+            }
+        }
+        
+        // Update dashboard with new data
+        function updateDashboard(data) {
+            // Update main metrics
+            document.getElementById('speedValue').textContent = data.speed_cms?.toFixed(1) || '0.0';
+            document.getElementById('tempValue').textContent = data.temperature?.toFixed(1) || '0.0';
+            document.getElementById('doValue').textContent = data.dissolved_oxygen?.toFixed(1) || '0.0';
+            document.getElementById('pressureValue').textContent = data.pressure?.toFixed(1) || '0.0';
+            document.getElementById('depthValue').textContent = data.depth?.toFixed(1) || '0.0';
+            
+            // Update acceleration values
+            document.getElementById('accelX').textContent = data.acceleration?.x?.toFixed(3) || '0.000';
+            document.getElementById('accelY').textContent = data.acceleration?.y?.toFixed(3) || '0.000';
+            document.getElementById('accelZ').textContent = data.acceleration?.z?.toFixed(3) || '0.000';
+            
+            // Update location info
+            document.getElementById('latitude').textContent = data.location?.lat?.toFixed(6) || '--';
+            document.getElementById('longitude').textContent = data.location?.lon?.toFixed(6) || '--';
+            document.getElementById('satellites').textContent = data.location?.satellites || '--';
+            
+            // Update data quality
+            document.getElementById('dataQuality').textContent = (data.quality || 0) + '%';
+            
+            // Update pump status
+            const pumpElement = document.getElementById('pumpStatus');
+            if (data.pump_state) {
+                pumpElement.textContent = 'ON';
+                pumpElement.className = 'pump-status on';
+            } else {
+                pumpElement.textContent = 'OFF';
+                pumpElement.className = 'pump-status off';
+            }
+            
+            // Update timestamp
+            updateTimestamp();
+        }
+        
+        // Store historical data
+        function storeData(data) {
+            const timestamp = new Date().toLocaleTimeString();
+            
+            // Add new data
+            historicalData.timestamps.push(timestamp);
+            historicalData.speed.push(data.speed_cms || 0);
+            historicalData.temperature.push(data.temperature || 0);
+            historicalData.dissolvedOxygen.push(data.dissolved_oxygen || 0);
+            historicalData.pressure.push(data.pressure || 0);
+            historicalData.depth.push(data.depth || 0);
+            historicalData.accelX.push(data.acceleration?.x || 0);
+            historicalData.accelY.push(data.acceleration?.y || 0);
+            historicalData.accelZ.push(data.acceleration?.z || 0);
+            
+            // Limit data points
+            if (historicalData.timestamps.length > MAX_DATA_POINTS) {
+                Object.keys(historicalData).forEach(key => {
+                    historicalData[key].shift();
+                });
+            }
+        }
+        
+        // Update all charts
+        function updateCharts() {
+            // Update speed chart
+            speedChart.data.labels = historicalData.timestamps;
+            speedChart.data.datasets[0].data = historicalData.speed;
+            speedChart.update('none');
+            
+            // Update temperature chart
+            tempChart.data.labels = historicalData.timestamps;
+            tempChart.data.datasets[0].data = historicalData.temperature;
+            tempChart.update('none');
+            
+            // Update DO chart
+            doChart.data.labels = historicalData.timestamps;
+            doChart.data.datasets[0].data = historicalData.dissolvedOxygen;
+            doChart.update('none');
+            
+            // Update pressure chart
+            pressureChart.data.labels = historicalData.timestamps;
+            pressureChart.data.datasets[0].data = historicalData.pressure;
+            pressureChart.update('none');
+            
+            // Update acceleration chart
+            accelChart.data.labels = historicalData.timestamps;
+            accelChart.data.datasets[0].data = historicalData.accelX;
+            accelChart.data.datasets[1].data = historicalData.accelY;
+            accelChart.data.datasets[2].data = historicalData.accelZ;
+            accelChart.update('none');
+        }
+        
+        // Update map with GPS location
+        function updateMap(data) {
+            if (data.location && data.location.lat && data.location.lon) {
+                const lat = data.location.lat;
+                const lon = data.location.lon;
+                
+                // Add to path
+                pathCoordinates.push([lat, lon]);
+                if (pathCoordinates.length > 100) {
+                    pathCoordinates.shift(); // Limit path length
+                }
+                
+                // Update path line
+                pathLine.setLatLngs(pathCoordinates);
+                
+                // Update or create marker
+                if (marker) {
+                    marker.setLatLng([lat, lon]);
+                } else {
+                    marker = L.marker([lat, lon], {
+                        title: 'Fish Location',
+                        icon: L.divIcon({
+                            className: 'custom-marker',
+                            html: '🐟',
+                            iconSize: [30, 30]
+                        })
+                    }).addTo(map);
+                }
+                
+                // Center map on new location (only if first time)
+                if (pathCoordinates.length === 1) {
+                    map.setView([lat, lon], 13);
+                }
+            }
+        }
+        
+        // Check for alerts based on thresholds
+        function checkAlerts(data) {
+            // Temperature alert
+            if (data.temperature < 20 || data.temperature > 32) {
+                showAlert(`⚠️ Temperature warning: ${data.temperature.toFixed(1)}°C`, 'warning');
+            }
+            
+            // DO alert
+            if (data.dissolved_oxygen < 4) {
+                showAlert(`⚠️ Low oxygen level: ${data.dissolved_oxygen.toFixed(1)} mg/L`, 'danger');
+            }
+            
+            // Pressure alert
+            if (Math.abs(data.pressure + 20) > 5) {
+                showAlert(`⚠️ Abnormal pressure: ${data.pressure.toFixed(1)} kPa`, 'warning');
+            }
+            
+            // Depth alert
+            if (data.depth > 25) {
+                showAlert(`⚠️ Deep dive detected: ${data.depth.toFixed(1)} m`, 'warning');
+            }
+        }
+        
+        // Update data table
+        function updateDataTable(data) {
+            const tableBody = document.getElementById('dataTableBody');
+            
+            // Create new row
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${new Date().toLocaleTimeString()}</td>
+                <td>${data.speed_cms?.toFixed(1) || '--'}</td>
+                <td>${data.temperature?.toFixed(1) || '--'}</td>
+                <td>${data.dissolved_oxygen?.toFixed(1) || '--'}</td>
+                <td>${data.pressure?.toFixed(1) || '--'}</td>
+                <td>${data.depth?.toFixed(1) || '--'}</td>
+                <td>${data.quality || '--'}%</td>
+            `;
+            
+            // Insert at beginning
+            if (tableBody.rows.length > 0 && tableBody.rows[0].cells[0].textContent === 'Waiting for data...') {
+                tableBody.innerHTML = '';
+            }
+            tableBody.insertBefore(newRow, tableBody.firstChild);
+            
+            // Limit rows
+            while (tableBody.rows.length > 10) {
+                tableBody.deleteRow(tableBody.rows.length - 1);
+            }
+        }
+        
+        // Update connection status indicator
+        function updateConnectionStatus(isConnected) {
+            const statusElement = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('connectionText');
+            
+            if (isConnected) {
+                statusElement.classList.add('connected');
+                statusText.textContent = 'Connected';
+                statusText.style.color = '#27ae60';
+            } else {
+                statusElement.classList.remove('connected');
+                statusText.textContent = 'Disconnected';
+                statusText.style.color = '#e74c3c';
+            }
+        }
+        
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+        }
+        
+        // Show alert message
+        function showAlert(message, type = 'warning') {
+            const alertsContainer = document.getElementById('alertsContainer');
+            
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = message;
+            
+            alertsContainer.insertBefore(alert, alertsContainer.firstChild);
+            
+            // Remove old alerts
+            while (alertsContainer.children.length > 3) {
+                alertsContainer.removeChild(alertsContainer.lastChild);
+            }
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 5000);
+        }
+        
+        // Control functions
+        function exportData() {
+            // Create CSV data
+            let csv = 'Timestamp,Speed(cm/s),Temperature(°C),DO(mg/L),Pressure(kPa),Depth(m),AccelX(g),AccelY(g),AccelZ(g)\n';
+            
+            for (let i = 0; i < historicalData.timestamps.length; i++) {
+                csv += `${historicalData.timestamps[i]},`;
+                csv += `${historicalData.speed[i]?.toFixed(2)},`;
+                csv += `${historicalData.temperature[i]?.toFixed(2)},`;
+                csv += `${historicalData.dissolvedOxygen[i]?.toFixed(2)},`;
+                csv += `${historicalData.pressure[i]?.toFixed(2)},`;
+                csv += `${historicalData.depth[i]?.toFixed(2)},`;
+                csv += `${historicalData.accelX[i]?.toFixed(3)},`;
+                csv += `${historicalData.accelY[i]?.toFixed(3)},`;
+                csv += `${historicalData.accelZ[i]?.toFixed(3)}\n`;
+            }
+            
+            // Download file
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fish_monitoring_${new Date().toISOString()}.csv`;
+            a.click();
+            
+            showAlert('Data exported successfully', 'success');
+        }
+        
+        function clearCharts() {
+            // Clear all historical data
+            Object.keys(historicalData).forEach(key => {
+                historicalData[key] = [];
+            });
+            
+            // Update all charts
+            updateCharts();
+            
+            // Clear path on map
+            pathCoordinates = [];
+            pathLine.setLatLngs([]);
+            
+            showAlert('Charts cleared', 'success');
+        }
+        
+        function emergencyRelease() {
+            if (confirm('Are you sure you want to trigger emergency release? This will turn off the pump immediately.')) {
+                // Send emergency command via MQTT
+                if (mqttClient && connected) {
+                    const message = new Paho.MQTT.Message(JSON.stringify({
+                        command: 'emergency_release',
+                        timestamp: Date.now()
+                    }));
+                    message.destinationName = 'fish/monitor/command';
+                    mqttClient.send(message);
+                    
+                    showAlert('Emergency release triggered!', 'danger');
+                } else {
+                    showAlert('Not connected to system', 'danger');
+                }
+            }
+        }
+        
+        // Generate demo data for testing
+        function generateDemoData() {
+            const demoData = {
+                device_id: "FISH_MON_001",
+                timestamp: Date.now() / 1000,
+                temperature: 25 + Math.random() * 5,
+                dissolved_oxygen: 6 + Math.random() * 3,
+                pressure: -20 + Math.random() * 4 - 2,
+                depth: Math.random() * 10,
+                speed_cms: 20 + Math.random() * 40,
+                location: {
+                    lat: -7.797068 + (Math.random() - 0.5) * 0.01,
+                    lon: 110.370529 + (Math.random() - 0.5) * 0.01,
+                    satellites: Math.floor(5 + Math.random() * 5)
+                },
+                acceleration: {
+                    x: (Math.random() - 0.5) * 0.5,
+                    y: (Math.random() - 0.5) * 0.5,
+                    z: 0.98 + (Math.random() - 0.5) * 0.1
+                },
+                quality: Math.floor(70 + Math.random() * 30),
+                pump_state: Math.random() > 0.7
+            };
+            
+            return demoData;
+        }
+        
+        // Demo mode for testing without MQTT
+        function startDemoMode() {
+            console.log('Starting demo mode...');
+            showAlert('Demo mode active - showing simulated data', 'success');
+            
+            setInterval(() => {
+                const demoData = generateDemoData();
+                updateDashboard(demoData);
+                storeData(demoData);
+                updateCharts();
+                updateMap(demoData);
+                updateDataTable(demoData);
+            }, 2000);
+        }
+        
+        // Check if should start demo mode (for testing)
+        // Uncomment the line below to enable demo mode
+        startDemoMode();
+    </script>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script> </body>
+
+</body>
+</html>

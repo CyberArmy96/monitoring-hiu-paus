@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "express": "^5.1.0",
+    "http": "^0.0.1-security",
+    "mqtt": "^5.14.1",
+    "pg": "^8.16.3",
+    "socket.io": "^4.8.1"
+  }
+}
