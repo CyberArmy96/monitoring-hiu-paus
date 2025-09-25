@@ -631,7 +631,7 @@
         const MQTT_PORT = 8884; // WebSocket port (8000 untuk public, 8884 untuk HiveMQ Cloud)
         const MQTT_USERNAME = 'hiupaus'; // Isi dengan username MQTT (kosongkan jika tidak ada)
         const MQTT_PASSWORD = 'HiuPaus123'; // Isi dengan password MQTT (kosongkan jika tidak ada)
-        const MQTT_USE_SSL = false; // Ganti true jika pakai HiveMQ Cloud
+        const MQTT_USE_SSL = true; // Ganti true jika pakai HiveMQ Cloud
         const MQTT_TOPIC = 'fish/monitor/data';
         const MAX_DATA_POINTS = 50;
         
@@ -920,7 +920,7 @@
             // Subscribe to topic
             mqttClient.subscribe(MQTT_TOPIC);
             
-            showAlert('Connected to monitoring system', 'success');
+            showAlert('Connected!', 'success');
         }
         
         function onConnectFailure(error) {
@@ -1082,7 +1082,7 @@
                     marker.setLatLng([lat, lon]);
                 } else {
                     marker = L.marker([lat, lon], {
-                        title: 'Fish Location',
+                        title: 'Lokasi',
                         icon: L.divIcon({
                             className: 'custom-marker',
                             html: '🐟',
@@ -1212,7 +1212,7 @@
         // Control functions
         function exportData() {
             // Create CSV data
-            let csv = 'Timestamp,Speed(cm/s),Temperature(°C),DO(mg/L),Pressure(kPa),Depth(m),AccelX(g),AccelY(g),AccelZ(g)\n';
+            let csv = 'Waktu, Kecepatan (cm/s), Suhu (°C), Kadar Oksigen (mg/L), Daya Hisap (kPa), Kedalaman (m), Percepatan-X (g), Percepatan-Y (g), Percepatan-Z (g)\n';
             
             for (let i = 0; i < historicalData.timestamps.length; i++) {
                 csv += `${historicalData.timestamps[i]},`;
@@ -1231,10 +1231,10 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `fish_monitoring_${new Date().toISOString()}.csv`;
+            a.download = `monitoring_hiu_paus_${new Date().toISOString()}.csv`;
             a.click();
             
-            showAlert('Data exported successfully', 'success');
+            showAlert('Data Diekspor!', 'success');
         }
         
         function clearCharts() {
@@ -1250,11 +1250,11 @@
             pathCoordinates = [];
             pathLine.setLatLngs([]);
             
-            showAlert('Charts cleared', 'success');
+            showAlert('Data Dibersihkan!', 'success');
         }
         
         function emergencyRelease() {
-            if (confirm('Are you sure you want to trigger emergency release? This will turn off the pump immediately.')) {
+            if (confirm('Melepas Alat Monitoring dari Hiu Paus?')) {
                 // Send emergency command via MQTT
                 if (mqttClient && connected) {
                     const message = new Paho.MQTT.Message(JSON.stringify({
@@ -1264,7 +1264,7 @@
                     message.destinationName = 'fish/monitor/command';
                     mqttClient.send(message);
                     
-                    showAlert('Emergency release triggered!', 'danger');
+                    showAlert('Alat Dilepas!', 'danger');
                 } else {
                     showAlert('Not connected to system', 'danger');
                 }
@@ -1300,8 +1300,8 @@
         
         // Demo mode for testing without MQTT
         function startDemoMode() {
-            console.log('Starting demo mode...');
-            showAlert('Demo mode active - showing simulated data', 'success');
+            console.log('Starting Demo Mode...');
+            showAlert('Demo Mode', 'success');
             
             setInterval(() => {
                 const demoData = generateDemoData();
@@ -1321,7 +1321,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script> </body>
 
-     <a href="https://wa.me/6282222216470" id="whatsapp-button" target="_blank" title="Hubungi via WhatsApp">
+     <a href="https://wa.me/6282222216470" id="whatsapp-button" target="_blank" title="Hubungi Developer">
         <i class="fab fa-whatsapp"></i>
     </a>
 
