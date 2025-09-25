@@ -12,6 +12,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
     <style>
         * {
             margin: 0;
@@ -371,6 +375,38 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        #whatsapp-button {
+            position: fixed; /* Kunci agar tombol 'mengambang' */
+            bottom: 25px;    /* Jarak dari bawah */
+            right: 25px;     /* Jarak dari kanan */
+            z-index: 1000;   /* Pastikan tombol selalu di lapisan paling atas */
+    
+            /* Styling tampilan tombol */
+            background-color: #25D366; /* Warna hijau WhatsApp */
+            color: white;              /* Warna ikon putih */
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;        /* Membuatnya menjadi lingkaran */
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.25); /* Efek bayangan agar 'timbul' */
+    
+            /* Menengahkan ikon di dalam lingkaran */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+    
+            /* Styling ikon */
+            font-size: 36px;
+            text-decoration: none; /* Menghapus garis bawah pada link */
+    
+            /* Animasi halus */
+            transition: transform 0.2s ease-in-out;
+        }
+
+        /* Efek saat mouse diarahkan ke tombol */
+        #whatsapp-button:hover {
+            transform: scale(1.1); /* Sedikit membesar */
         }
     </style>
 </head>
@@ -1284,6 +1320,10 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script> </body>
+
+     <a href="https://wa.me/6282222216470" id="whatsapp-button" target="_blank" title="Hubungi via WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </a>
 
 </body>
 </html>
