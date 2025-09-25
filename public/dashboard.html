@@ -260,20 +260,21 @@
             margin-top: 20px;
             border-collapse: collapse;
         }
-        
+
         .data-table th,
         .data-table td {
             padding: 12px;
-            text-align: left;
+            text-align: center;
+            vertical-align: middle;
             border-bottom: 1px solid #e0e0e0;
         }
-        
+
         .data-table th {
             background: #f5f5f5;
             font-weight: 600;
             color: #2c3e50;
         }
-        
+
         .data-table tbody tr:hover {
             background: #f8f9fa;
         }
@@ -682,7 +683,7 @@
                             ...commonOptions.scales.y,
                             title: {
                                 display: true,
-                                text: 'Speed (cm/s)'
+                                text: '(cm/s)'
                             }
                         }
                     }
@@ -711,7 +712,7 @@
                             ...commonOptions.scales.y,
                             title: {
                                 display: true,
-                                text: 'Temperature (°C)'
+                                text: '(°C)'
                             }
                         }
                     }
@@ -740,7 +741,7 @@
                             ...commonOptions.scales.y,
                             title: {
                                 display: true,
-                                text: 'DO (mg/L)'
+                                text: '(mg/L)'
                             }
                         }
                     }
@@ -769,7 +770,7 @@
                             ...commonOptions.scales.y,
                             title: {
                                 display: true,
-                                text: 'Pressure (kPa)'
+                                text: '(kPa)'
                             }
                         }
                     }
@@ -822,7 +823,7 @@
                             ...commonOptions.scales.y,
                             title: {
                                 display: true,
-                                text: 'Acceleration (g)'
+                                text: '(g)'
                             }
                         }
                     }
@@ -1087,28 +1088,43 @@
         // Update data table
         function updateDataTable(data) {
             const tableBody = document.getElementById('dataTableBody');
-            
-            // Create new row
-            const newRow = document.createElement('tr');
-            newRow.innerHTML = `
-                <td>${new Date().toLocaleTimeString()}</td>
-                <td>${data.speed_cms?.toFixed(1) || '--'}</td>
-                <td>${data.temperature?.toFixed(1) || '--'}</td>
-                <td>${data.dissolved_oxygen?.toFixed(1) || '--'}</td>
-                <td>${data.pressure?.toFixed(1) || '--'}</td>
-                <td>${data.depth?.toFixed(1) || '--'}</td>
-                <td>${data.quality || '--'}%</td>
-            `;
-            
-            // Insert at beginning
-            if (tableBody.rows.length > 0 && tableBody.rows[0].cells[0].textContent === 'Waiting for data...') {
-                tableBody.innerHTML = '';
+            const MAX_TABLE_ROWS = 10; // Batas jumlah baris yang ingin ditampilkan
+
+            // Hapus pesan "Waiting for data..." jika masih ada
+            const firstRow = tableBody.rows[0];
+            if (firstRow && firstRow.cells.length === 1) {
+                tableBody.innerHTML = ''; // Kosongkan isi tabel
             }
-            tableBody.insertBefore(newRow, tableBody.firstChild);
-            
-            // Limit rows
-            while (tableBody.rows.length > 10) {
-                tableBody.deleteRow(tableBody.rows.length - 1);
+
+            // Buat baris baru (<tr>)
+            const newRow = document.createElement('tr');
+
+            // Buat dan isi sel-sel (<td>) sesuai urutan kolom
+            const timestamp = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const speed = data.speed_cms?.toFixed(1) || '-';
+            const temp = data.temperature?.toFixed(1) || '-';
+            const oxygen = data.dissolved_oxygen?.toFixed(1) || '-';
+            const pressure = data.pressure?.toFixed(1) || '-'; // Ini adalah "Daya Hisap"
+            const depth = data.depth?.toFixed(1) || '-';
+            const quality = `${data.quality || 0}%`;
+
+            // Masukkan data ke dalam baris baru
+            newRow.innerHTML = `
+                <td>${timestamp}</td>
+                <td>${speed}</td>
+                <td>${temp}</td>
+                <td>${oxygen}</td>
+                <td>${pressure}</td>
+                <td>${depth}</td>
+                <td>${quality}</td>
+            `;
+
+            // Tambahkan baris baru ke bagian paling atas tabel
+            tableBody.prepend(newRow);
+
+            // Jaga agar jumlah baris tidak melebihi batas
+            if (tableBody.rows.length > MAX_TABLE_ROWS) {
+                tableBody.deleteRow(tableBody.rows.length - 1); // Hapus baris paling bawah
             }
         }
         

@@ -80,6 +80,7 @@ socket.on('disconnect', () => {
  * Kode ini diambil dari cuplikan Anda dan sudah benar.
  */
 function updateDashboard(data) {
+    document.getElementById('deviceId').textContent = data.device_id || '--';
     // Update main metrics
     document.getElementById('speedValue').textContent = data.speed_cms?.toFixed(1) || '0.0';
     document.getElementById('tempValue').textContent = data.temperature?.toFixed(1) || '0.0';
