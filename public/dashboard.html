@@ -432,10 +432,10 @@
             <!-- Speed Card -->
             <div class="card">
                 <div class="card-title">
-                    🏊 Swimming Speed
+                    🏊 Kecepatan Berenang
                 </div>
                 <div class="metric-display">
-                    <div class="metric-label">Current Speed</div>
+                    <div class="metric-label">Kecepatan</div>
                     <div class="metric-value">
                         <span id="speedValue">0.0</span>
                         <span class="metric-unit">cm/s</span>
@@ -449,10 +449,10 @@
             <!-- Temperature Card -->
             <div class="card">
                 <div class="card-title">
-                    🌡️ Water Temperature
+                    🌡️ Suhu Air
                 </div>
                 <div class="metric-display" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
-                    <div class="metric-label">Temperature</div>
+                    <div class="metric-label">Suhu</div>
                     <div class="metric-value">
                         <span id="tempValue">0.0</span>
                         <span class="metric-unit">°C</span>
@@ -466,10 +466,10 @@
             <!-- Dissolved Oxygen Card -->
             <div class="card">
                 <div class="card-title">
-                    💧 Dissolved Oxygen
+                    💧 Oksigen Terlarut
                 </div>
                 <div class="metric-display" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
-                    <div class="metric-label">DO Level</div>
+                    <div class="metric-label">Kadar Oksigen</div>
                     <div class="metric-value">
                         <span id="doValue">0.0</span>
                         <span class="metric-unit">mg/L</span>
@@ -483,10 +483,10 @@
             <!-- Pressure Card -->
             <div class="card">
                 <div class="card-title">
-                    🎯 Compartment Pressure
+                    🎯 Kompartemen Penghisap
                 </div>
                 <div class="metric-display" style="background: linear-gradient(135deg, #fa709a, #fee140);">
-                    <div class="metric-label">Suction Pressure</div>
+                    <div class="metric-label">Daya Hisap</div>
                     <div class="metric-value">
                         <span id="pressureValue">0.0</span>
                         <span class="metric-unit">kPa</span>
@@ -500,21 +500,21 @@
             <!-- Acceleration Card -->
             <div class="card">
                 <div class="card-title">
-                    📐 3-Axis Acceleration
+                    📐 Percepatan 3-Orientasi
                 </div>
                 <div class="acceleration-grid">
                     <div class="accel-axis x">
-                        <div class="accel-label">X-Axis</div>
+                        <div class="accel-label">Sumbu-X</div>
                         <div class="accel-value" id="accelX">0.00</div>
                         <div class="metric-unit">g</div>
                     </div>
                     <div class="accel-axis y">
-                        <div class="accel-label">Y-Axis</div>
+                        <div class="accel-label">Sumbu-Y</div>
                         <div class="accel-value" id="accelY">0.00</div>
                         <div class="metric-unit">g</div>
                     </div>
                     <div class="accel-axis z">
-                        <div class="accel-label">Z-Axis</div>
+                        <div class="accel-label">Sumbu-Z</div>
                         <div class="accel-value" id="accelZ">0.00</div>
                         <div class="metric-unit">g</div>
                     </div>
@@ -527,10 +527,10 @@
             <!-- Depth Card -->
             <div class="card">
                 <div class="card-title">
-                    🌊 Depth & Location
+                    🌊 Posisi
                 </div>
                 <div class="metric-display" style="background: linear-gradient(135deg, #30cfd0, #330867);">
-                    <div class="metric-label">Current Depth</div>
+                    <div class="metric-label">Kedalaman</div>
                     <div class="metric-value">
                         <span id="depthValue">0.0</span>
                         <span class="metric-unit">m</span>
@@ -538,15 +538,15 @@
                 </div>
                 <table class="data-table">
                     <tr>
-                        <td><strong>Latitude:</strong></td>
+                        <td><strong>Lintang:</strong></td>
                         <td id="latitude">--</td>
                     </tr>
                     <tr>
-                        <td><strong>Longitude:</strong></td>
+                        <td><strong>Bujur:</strong></td>
                         <td id="longitude">--</td>
                     </tr>
                     <tr>
-                        <td><strong>Satellites:</strong></td>
+                        <td><strong>Satelit Terhubung:</strong></td>
                         <td id="satellites">--</td>
                     </tr>
                 </table>
@@ -556,7 +556,7 @@
         <!-- Map Section -->
         <div class="card">
             <div class="card-title">
-                🗺️ GPS Tracking
+                🗺️ GPS Tracking (Kalo GPS NEO Berfungsi)
             </div>
             <div id="map"></div>
         </div>
@@ -564,18 +564,18 @@
         <!-- Historical Data Table -->
         <div class="card">
             <div class="card-title">
-                📊 Recent Readings
+                📊 Data Terkini
             </div>
             <table class="data-table" id="dataTable">
                 <thead>
                     <tr>
-                        <th>Time</th>
-                        <th>Speed (cm/s)</th>
-                        <th>Temp (°C)</th>
-                        <th>DO (mg/L)</th>
-                        <th>Pressure (kPa)</th>
-                        <th>Depth (m)</th>
-                        <th>Quality</th>
+                        <th>Waktu</th>
+                        <th>Kecepatan (cm/s)</th>
+                        <th>Suhu Air (°C)</th>
+                        <th>Kadar Oksigen (mg/L)</th>
+                        <th>Daya Hisap (kPa)</th>
+                        <th>Kedalaman (m)</th>
+                        <th>Akurasi Data</th>
                     </tr>
                 </thead>
                 <tbody id="dataTableBody">
@@ -1222,7 +1222,7 @@
         // Generate demo data for testing
         function generateDemoData() {
             const demoData = {
-                device_id: "FISH_MON_001",
+                device_id: "Azfazaki Hakimi",
                 timestamp: Date.now() / 1000,
                 temperature: 25 + Math.random() * 5,
                 dissolved_oxygen: 6 + Math.random() * 3,
