@@ -1,10 +1,10 @@
-// server.js (Versi Final)
+// server.js (Versi Final - Perbaikan mqttClient)
 
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const mqtt = require('mqtt');
-const { Client } = require('pg');
+const { Client } = require('pg'); // Gunakan Client dari pg
 const path = require('path');
 
 const app = express();
@@ -13,19 +13,39 @@ const io = socketIo(server);
 
 // --- KONFIGURASI ---
 const dbClient = new Client({
-    connectionString: process.env.DATABASE_URL, // Ambil URL dari Render
+    connectionString: process.env.DATABASE_URL,
     ssl: {
         rejectUnauthorized: false
     }
 });
-dbClient.connect();
 
+// --- BAGIAN YANG DIPERBAIKI ---
+// 1. Impor library mqtt
+// (Pastikan ini ada di atas)
+
+// 2. Buat koneksi ke MQTT dan simpan di variabel mqttClient
+const mqttClient = mqtt.connect('mqtt://broker.hivemq.com');
+const MQTT_TOPIC = 'fish/monitor/data'; // Sesuaikan jika perlu
+// --- AKHIR BAGIAN PERBAIKAN ---
+
+
+// --- KONEKSI ---
+dbClient.connect((err) => { // Tambahkan callback error untuk debugging
+    if (err) {
+        console.error('❌ Error connecting to PostgreSQL:', err.stack);
+        return;
+    }
+    console.log('✅ Connected to PostgreSQL database.');
+});
+
+// 3. Sekarang baru gunakan mqttClient
 mqttClient.on('connect', () => {
     console.log('✅ Connected to MQTT broker.');
     mqttClient.subscribe(MQTT_TOPIC, (err) => {
         if (!err) console.log(`Subscribed to topic: '${MQTT_TOPIC}'`);
     });
 });
+
 
 // --- LOGIKA INTI ---
 mqttClient.on('message', (topic, message) => {
@@ -34,16 +54,15 @@ mqttClient.on('message', (topic, message) => {
         console.log(`📥 Flat data received from MQTT:`, flatData);
 
         const sql = `INSERT INTO fish_monitoring (device_id, speed_cms, temperature, dissolved_oxygen, pressure, depth, latitude, longitude, accel_x, accel_y, accel_z, quality, pump_state) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`;
-    const values = [flatData.device_id, flatData.speed_cms, flatData.temperature, flatData.dissolved_oxygen, flatData.pressure, flatData.depth, flatData.latitude, flatData.longitude, flatData.accel_x, flatData.accel_y, flatData.accel_z, flatData.quality, flatData.pump_state];
+        const values = [flatData.device_id, flatData.speed_cms, flatData.temperature, flatData.dissolved_oxygen, flatData.pressure, flatData.depth, flatData.latitude, flatData.longitude, flatData.accel_x, flatData.accel_y, flatData.accel_z, flatData.quality, flatData.pump_state];
 
-    dbClient.query(sql, values, (error, results) => {
-        if (error) {
-            console.error('❌ Failed to insert data into PostgreSQL:', error);
-            return;
-        }
-            console.log('💾 Data saved to MySQL, ID:', results.insertId);
+        dbClient.query(sql, values, (error, results) => {
+            if (error) {
+                console.error('❌ Failed to insert data into PostgreSQL:', error);
+                return;
+            }
+            console.log('💾 Data saved to PostgreSQL');
             
-            // PENTING: Transformasi data ke format yang diinginkan frontend
             const nestedData = {
                 device_id: flatData.device_id,
                 timestamp: flatData.timestamp,
@@ -70,7 +89,6 @@ mqttClient.on('message', (topic, message) => {
 // --- SAJIKAN FRONTEND ---
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rute ini secara eksplisit mengirimkan dashboard.html saat halaman utama diminta
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
@@ -78,5 +96,5 @@ app.get('/', (req, res) => {
 // --- JALANKAN SERVER ---
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+    console.log(`🚀 Server is running on port ${PORT}`);
 });
