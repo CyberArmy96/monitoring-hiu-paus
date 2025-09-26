@@ -591,23 +591,6 @@
                 <div class="card-title">
                     📐 Percepatan 3-Orientasi
                 </div>
-                <div class="acceleration-grid">
-                    <div class="accel-axis x">
-                        <div class="accel-label">Sumbu-X</div>
-                        <div class="accel-value" id="accelX">0.000</div>
-                        <div class="metric-unit">g</div>
-                    </div>
-                    <div class="accel-axis y">
-                        <div class="accel-label">Sumbu-Y</div>
-                        <div class="accel-value" id="accelY">0.000</div>
-                        <div class="metric-unit">g</div>
-                    </div>
-                    <div class="accel-axis z">
-                        <div class="accel-label">Sumbu-Z</div>
-                        <div class="accel-value" id="accelZ">0.000</div>
-                        <div class="metric-unit">g</div>
-                    </div>
-                </div>
                 <div class="chart-container">
                     <canvas id="accelChart"></canvas>
                 </div>
@@ -892,32 +875,29 @@
                         {
                             label: 'Sumbu-X',
                             data: [],
-                            // --- PERUBAHAN WARNA ---
-                            borderColor: '#2563eb', // Biru solid & kuat
+                            borderColor: '#2563eb',
                             backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                            borderWidth: 2.5, // Sedikit lebih tebal untuk data utama
+                            borderWidth: 2.5,
                             tension: 0.4,
-                            fill: true, // --- AKTIFKAN AREA FILL ---
-                            pointRadius: 0, // Sembunyikan titik agar lebih bersih
+                            fill: true,
+                            pointRadius: 0,
                             pointHoverRadius: 6
                         },
                         {
                             label: 'Sumbu-Y',
                             data: [],
-                            // --- PERUBAHAN WARNA ---
-                            borderColor: '#60a5fa', // Biru lebih terang
+                            borderColor: '#60a5fa',
                             backgroundColor: 'rgba(96, 165, 250, 0.1)',
                             borderWidth: 2,
                             tension: 0.4,
-                            fill: false, // Biarkan sumbu lain tanpa fill agar tidak menumpuk
+                            fill: false,
                             pointRadius: 0,
                             pointHoverRadius: 6
                         },
                         {
                             label: 'Sumbu-Z',
                             data: [],
-                            // --- PERUBAHAN WARNA ---
-                            borderColor: '#a5b4fc', // Biru paling terang/ungu
+                            borderColor: '#a5b4fc',
                             backgroundColor: 'rgba(165, 180, 252, 0.1)',
                             borderWidth: 2,
                             tension: 0.4,
@@ -934,8 +914,8 @@
                             display: true,
                             position: 'bottom',
                             labels: {
-                                color: '#a0aec0', // Warna label agar sesuai tema gelap
-                                usePointStyle: true, // Gunakan lingkaran bukan kotak
+                                color: '#a0aec0',
+                                usePointStyle: true,
                                 boxWidth: 8
                             }
                         }
@@ -948,15 +928,14 @@
                                 display: true,
                                 text: 'Percepatan (g)'
                             },
-                            // --- PERUBAHAN GRID ---
                             grid: {
-                                color: 'rgba(255, 255, 255, 0.05)' // Membuat garis grid lebih samar
+                                color: 'rgba(255, 255, 255, 0.05)'
                             }
                         },
                         x: {
                             ...commonOptions.scales.x,
                              grid: {
-                                color: 'rgba(255, 255, 255, 0.05)' // Membuat garis grid lebih samar
+                                color: 'rgba(255, 255, 255, 0.05)'
                             }
                         }
                     }
