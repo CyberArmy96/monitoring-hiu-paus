@@ -400,6 +400,12 @@
             .header h1 {
                 font-size: 1.8em;
             }
+
+            .table-wrapper {
+                overflow-x: auto;
+                white-space: nowrap; 
+                -webkit-overflow-scrolling: touch; 
+            }
         }
         
         .loading-spinner {
@@ -715,23 +721,24 @@
             <div class="card-title">
                 Data Terkini
             </div>
-            <table class="data-table" id="dataTable">
-                <thead>
-                    <tr>
-                        <th>Waktu</th>
-                        <th>Kecepatan (cm/s)</th>
-                        <th>Suhu Air (°C)</th>
-                        <th>Kadar Oksigen (mg/L)</th>
-                        <th>Daya Hisap (kPa)</th>
-                        <th>Kedalaman (m)</th>
-                        <th>Akurasi Data</th>
-                    </tr>
-                </thead>
-                <tbody id="dataTableBody">
-                </tbody>
-            </table>
+            <div class="table-wrapper"></div>
+                <table class="data-table" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Waktu</th>
+                            <th>Kecepatan (cm/s)</th>
+                            <th>Suhu Air (°C)</th>
+                            <th>Kadar Oksigen (mg/L)</th>
+                            <th>Daya Hisap (kPa)</th>
+                            <th>Kedalaman (m)</th>
+                            <th>Akurasi Data</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
     
     <a href="https://wa.me/6282222216470" id="whatsapp-button" target="_blank" title="Hubungi Developer">
         <i class="fab fa-whatsapp"></i>
