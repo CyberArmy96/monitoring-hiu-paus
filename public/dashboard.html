@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Hiu Paus - Real Time Dashboard</title>
+    <title>Monitoring Hiu Paus - Dashboard</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js"></script>
@@ -892,29 +892,38 @@
                         {
                             label: 'Sumbu-X',
                             data: [],
-                            borderColor: '#e74c3c',
-                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                            borderWidth: 2,
+                            // --- PERUBAHAN WARNA ---
+                            borderColor: '#2563eb', // Biru solid & kuat
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            borderWidth: 2.5, // Sedikit lebih tebal untuk data utama
                             tension: 0.4,
-                            fill: false
+                            fill: true, // --- AKTIFKAN AREA FILL ---
+                            pointRadius: 0, // Sembunyikan titik agar lebih bersih
+                            pointHoverRadius: 6
                         },
                         {
                             label: 'Sumbu-Y',
                             data: [],
-                            borderColor: '#27ae60',
-                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            // --- PERUBAHAN WARNA ---
+                            borderColor: '#60a5fa', // Biru lebih terang
+                            backgroundColor: 'rgba(96, 165, 250, 0.1)',
                             borderWidth: 2,
                             tension: 0.4,
-                            fill: false
+                            fill: false, // Biarkan sumbu lain tanpa fill agar tidak menumpuk
+                            pointRadius: 0,
+                            pointHoverRadius: 6
                         },
                         {
                             label: 'Sumbu-Z',
                             data: [],
-                            borderColor: '#3498db',
-                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            // --- PERUBAHAN WARNA ---
+                            borderColor: '#a5b4fc', // Biru paling terang/ungu
+                            backgroundColor: 'rgba(165, 180, 252, 0.1)',
                             borderWidth: 2,
                             tension: 0.4,
-                            fill: false
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 6
                         }
                     ]
                 },
@@ -923,7 +932,12 @@
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                color: '#a0aec0', // Warna label agar sesuai tema gelap
+                                usePointStyle: true, // Gunakan lingkaran bukan kotak
+                                boxWidth: 8
+                            }
                         }
                     },
                     scales: {
@@ -933,6 +947,16 @@
                             title: {
                                 display: true,
                                 text: 'Percepatan (g)'
+                            },
+                            // --- PERUBAHAN GRID ---
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)' // Membuat garis grid lebih samar
+                            }
+                        },
+                        x: {
+                            ...commonOptions.scales.x,
+                             grid: {
+                                color: 'rgba(255, 255, 255, 0.05)' // Membuat garis grid lebih samar
                             }
                         }
                     }
