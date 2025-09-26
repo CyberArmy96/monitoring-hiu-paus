@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Hiu Paus - Dashboard</title>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js"></script>
+    <title>
+        Monitoring Hiu Paus - Dashboard
+    </title>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
     <style>
@@ -104,10 +105,10 @@
         }
         
         .card-title {
-            font-size: 1.2em;
+            font-size: 2em;
             color: #2c3e50;
             margin-bottom: 20px;
-            font-weight: 600;
+            font-weight: 750;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -164,6 +165,57 @@
             position: relative;
             height: 250px;
             margin-top: 20px;
+        }
+
+        .metric-display .acceleration-grid {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            padding: 10px 0;
+        }
+
+        .metric-display .accel-axis {
+            text-align: center;
+            color: white;
+        }
+
+        .metric-display .accel-label {
+            font-size: 0.8rem;
+            font-weight: 300;
+            opacity: 0.8;
+        }
+
+        .metric-display .accel-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .metric-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 0 16px 12px 16px;
+        }
+
+        .metric-display-small {
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+            transition: transform 0.2s ease;
+        }
+
+        .metric-display-small .metric-label {
+            font-size: 0.8rem;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+
+        .metric-display-small .metric-value {
+            font-size: 1.6rem;
+            font-weight: 600;
+            line-height: 1.2;
         }
 
         #map {
@@ -232,7 +284,7 @@
         .data-table th,
         .data-table td {
             padding: 12px;
-            text-align: center;
+            text-align: left;
             vertical-align: middle;
             border-bottom: 1px solid #e0e0e0;
         }
@@ -462,7 +514,16 @@
         }
     </style>
 </head>
+
 <body>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+
+
     <div class="container">
         <!-- Header -->
         <div class="header">
@@ -505,7 +566,7 @@
                     🔄 Reconnect
                 </button>
                 <button class="btn btn-secondary" onclick="exportData()">
-                    📥 Export Data
+                    ⬇️ Ekspor Data
                 </button>
                 <button class="btn btn-secondary" onclick="clearCharts()">
                     🗑️ Clear Charts
@@ -521,7 +582,7 @@
             <!-- Speed Card -->
             <div class="card">
                 <div class="card-title">
-                    🏊 Kecepatan Berenang
+                    Kecepatan Berenang
                 </div>
                 <div class="metric-display">
                     <div class="metric-label">Kecepatan</div>
@@ -538,7 +599,7 @@
             <!-- Temperature Card -->
             <div class="card">
                 <div class="card-title">
-                    🌡️ Suhu Air
+                    Suhu Air
                 </div>
                 <div class="metric-display" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
                     <div class="metric-label">Suhu</div>
@@ -555,7 +616,7 @@
             <!-- Dissolved Oxygen Card -->
             <div class="card">
                 <div class="card-title">
-                    💧 Oksigen Terlarut
+                    Oksigen Terlarut
                 </div>
                 <div class="metric-display" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
                     <div class="metric-label">Kadar Oksigen</div>
@@ -572,7 +633,7 @@
             <!-- Pressure Card -->
             <div class="card">
                 <div class="card-title">
-                    🎯 Kompartemen Penghisap
+                    Kompartemen Penghisap
                 </div>
                 <div class="metric-display" style="background: linear-gradient(135deg, #fa709a, #fee140);">
                     <div class="metric-label">Daya Hisap</div>
@@ -589,17 +650,33 @@
             <!-- Acceleration Card -->
             <div class="card">
                 <div class="card-title">
-                    📐 Percepatan 3-Orientasi
+                    Percepatan 3-Orientasi
                 </div>
+    
+                <div class="metric-grid-3">
+                    <div class="metric-display-small" id="accelX-box">
+                        <div class="metric-label">Sumbu-X</div>
+                        <div class="metric-value" id="accelX">0.000</div>
+                    </div>
+                    <div class="metric-display-small" id="accelY-box">
+                        <div class="metric-label">Sumbu-Y</div>
+                        <div class="metric-value" id="accelY">0.000</div>
+                    </div>
+                    <div class="metric-display-small" id="accelZ-box">
+                        <div class="metric-label">Sumbu-Z</div>
+                        <div class="metric-value" id="accelZ">0.000</div>
+                    </div>
+                </div>
+
                 <div class="chart-container">
-                    <canvas id="accelChart"></canvas>
+                <canvas id="accelChart"></canvas>
                 </div>
             </div>
 
             <!-- Depth Card -->
             <div class="card">
                 <div class="card-title">
-                    🌊 Posisi
+                    Posisi
                 </div>
                 <div class="metric-display" style="background: linear-gradient(135deg, #30cfd0, #330867);">
                     <div class="metric-label">Kedalaman</div>
@@ -628,7 +705,7 @@
         <!-- Map Section -->
         <div class="card">
             <div class="card-title">
-                🗺️ GPS Tracking (Kalo GPS NEO Berfungsi)
+                GPS Tracking (Kalo GPS NEO Berfungsi)
             </div>
             <div id="map"></div>
         </div>
@@ -636,7 +713,7 @@
         <!-- Historical Data Table -->
         <div class="card">
             <div class="card-title">
-                📊 Data Terkini
+                Data Terkini
             </div>
             <table class="data-table" id="dataTable">
                 <thead>
@@ -656,14 +733,31 @@
         </div>
     </div>
     
+    <a href="https://wa.me/6282222216470" id="whatsapp-button" target="_blank" title="Hubungi Developer">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- Footer Credit -->
+    <footer class="footer-credit">
+        <div class="credit-content">
+            <div class="credit-line"></div>
+            <div class="credit-text">
+                <span class="credit-icon">🐟</span>
+                <span>Developed with <span class="heart">❤️</span> by</span>
+                <span class="credit-name">Nadine Adzka Faustina</span>
+                <span class="credit-year">© 2025</span>
+            </div>
+            <div class="credit-line"></div>
+        </div>
+    </footer>
+
     <script>
         // Configuration
-        // GANTI SEMUA NILAI INI SESUAI MQTT BROKER ANDA
-        const MQTT_BROKER = 'http://b8ae5c3ad3484c4fa485c54ae6eb8ca2.s1.eu.hivemq.cloud'; // Ganti dengan alamat broker Anda
-        const MQTT_PORT = 8884; // WebSocket port (8000 untuk public, 8884 untuk HiveMQ Cloud)
-        const MQTT_USERNAME = 'hiupaus'; // Isi dengan username MQTT (kosongkan jika tidak ada)
-        const MQTT_PASSWORD = 'HiuPaus123'; // Isi dengan password MQTT (kosongkan jika tidak ada)
-        const MQTT_USE_SSL = true; // Ganti true jika pakai HiveMQ Cloud
+        const MQTT_BROKER = 'http://b8ae5c3ad3484c4fa485c54ae6eb8ca2.s1.eu.hivemq.cloud';
+        const MQTT_PORT = 8884;
+        const MQTT_USERNAME = 'hiupaus';
+        const MQTT_PASSWORD = 'HiuPaus123';
+        const MQTT_USE_SSL = true;
         const MQTT_TOPIC = 'fish/monitor/data';
         const MAX_DATA_POINTS = 50;
         
@@ -690,6 +784,17 @@
         
         // Chart instances
         let speedChart, tempChart, doChart, pressureChart, accelChart;
+        
+        const accelColors = {
+                x: { border: '#e53e3e', bg: 'rgba(229, 62, 62, 0.7)' },
+                y: { border: '#38a169', bg: 'rgba(56, 161, 105, 0.7)' },
+                z: { border: '#2563eb', bg: 'rgba(37, 99, 235, 0.7)' }
+            };
+        
+        // Atur warna latar belakang kotak metrik
+        document.getElementById('accelX-box').style.background = accelColors.x.bg;
+        document.getElementById('accelY-box').style.background = accelColors.y.bg;
+        document.getElementById('accelZ-box').style.background = accelColors.z.bg;
         
         // Initialize everything on page load
         window.onload = function() {
@@ -720,6 +825,7 @@
             }
         
         }
+
         // Initialize all charts
         function initializeCharts() {
             // Common chart options
@@ -866,7 +972,7 @@
                 }
             });
 
-            // Acceleration Chart (3 axes)
+            // Acceleration Chart
             accelChart = new Chart(document.getElementById('accelChart'), {
                 type: 'line',
                 data: {
@@ -875,35 +981,29 @@
                         {
                             label: 'Sumbu-X',
                             data: [],
-                            borderColor: '#2563eb',
+                            borderColor: accelColors.x.border,
                             backgroundColor: 'rgba(37, 99, 235, 0.1)',
                             borderWidth: 2.5,
                             tension: 0.4,
-                            fill: true,
-                            pointRadius: 0,
-                            pointHoverRadius: 6
+                            fill: false,
                         },
                         {
                             label: 'Sumbu-Y',
                             data: [],
-                            borderColor: '#60a5fa',
+                            borderColor: accelColors.y.border,
                             backgroundColor: 'rgba(96, 165, 250, 0.1)',
                             borderWidth: 2,
                             tension: 0.4,
                             fill: false,
-                            pointRadius: 0,
-                            pointHoverRadius: 6
                         },
                         {
                             label: 'Sumbu-Z',
                             data: [],
-                            borderColor: '#a5b4fc',
+                            borderColor: accelColors.z.border,
                             backgroundColor: 'rgba(165, 180, 252, 0.1)',
                             borderWidth: 2,
                             tension: 0.4,
                             fill: false,
-                            pointRadius: 0,
-                            pointHoverRadius: 6
                         }
                     ]
                 },
@@ -911,7 +1011,7 @@
                     ...commonOptions,
                     plugins: {
                         legend: {
-                            display: true,
+                            display: false,
                             position: 'bottom',
                             labels: {
                                 color: '#a0aec0',
@@ -924,19 +1024,12 @@
                         ...commonOptions.scales,
                         y: {
                             ...commonOptions.scales.y,
-                            title: {
-                                display: true,
-                                text: 'Percepatan (g)'
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.05)'
-                            }
+                            title: { display: true, text: '(g)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
                         },
                         x: {
                             ...commonOptions.scales.x,
-                             grid: {
-                                color: 'rgba(255, 255, 255, 0.05)'
-                            }
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
                         }
                     }
                 }
@@ -1156,7 +1249,7 @@
                 // Add to path
                 pathCoordinates.push([lat, lon]);
                 if (pathCoordinates.length > 100) {
-                    pathCoordinates.shift(); // Limit path length
+                    pathCoordinates.shift();
                 }
                 
                 // Update path line
@@ -1209,12 +1302,12 @@
         // Update data table
         function updateDataTable(data) {
             const tableBody = document.getElementById('dataTableBody');
-            const MAX_TABLE_ROWS = 10; // Batas jumlah baris yang ingin ditampilkan
+            const MAX_TABLE_ROWS = 10;
 
             // Hapus pesan "Waiting for data..." jika masih ada
             const firstRow = tableBody.rows[0];
             if (firstRow && firstRow.cells.length === 1) {
-                tableBody.innerHTML = ''; // Kosongkan isi tabel
+                tableBody.innerHTML = '';
             }
 
             // Buat baris baru (<tr>)
@@ -1225,7 +1318,7 @@
             const speed = data.speed_cms?.toFixed(1) || '-';
             const temp = data.temperature?.toFixed(1) || '-';
             const oxygen = data.dissolved_oxygen?.toFixed(1) || '-';
-            const pressure = data.pressure?.toFixed(1) || '-'; // Ini adalah "Daya Hisap"
+            const pressure = data.pressure?.toFixed(1) || '-';
             const depth = data.depth?.toFixed(1) || '-';
             const quality = `${data.quality || 0}%`;
 
@@ -1356,7 +1449,7 @@
         // Generate demo data for testing
         function generateDemoData() {
             const demoData = {
-                device_id: "Azfazaki Hakimi",
+                device_id: "Azfazaki_Hakimi",
                 timestamp: Date.now() / 1000,
                 temperature: 25 + Math.random() * 5,
                 dissolved_oxygen: 6 + Math.random() * 3,
@@ -1393,32 +1486,11 @@
                 updateCharts();
                 updateMap(demoData);
                 updateDataTable(demoData);
-            }, 2000);
+            }, 1000);
         }
 
         startDemoMode();
     </script>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script> </body>
-
-     <a href="https://wa.me/6282222216470" id="whatsapp-button" target="_blank" title="Hubungi Developer">
-        <i class="fab fa-whatsapp"></i>
-    </a>
-
-    <!-- Footer Credit -->
-    <footer class="footer-credit">
-        <div class="credit-content">
-            <div class="credit-line"></div>
-            <div class="credit-text">
-                <span class="credit-icon">🐟</span>
-                <span>Developed with <span class="heart">❤️</span> by</span>
-                <span class="credit-name">Nadine Adzka Faustina</span>
-                <span class="credit-year">© 2025</span>
-            </div>
-            <div class="credit-line"></div>
-        </div>
-    </footer>
-
 </body>
+
 </html>

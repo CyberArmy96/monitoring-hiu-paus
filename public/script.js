@@ -298,7 +298,7 @@ function createAccelerationChart(elementId, config) {
         },
         options: {
             ...config,
-            plugins: { ...config.plugins, legend: { display: true, position: 'bottom' }},
+            plugins: { ...config.plugins, legend: { display: false, position: 'bottom' }},
             scales: {
                 ...config.scales,
                 y: {
@@ -541,7 +541,7 @@ function exportData() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `fish_monitoring_${new Date().toISOString()}.csv`;
+    a.download = `monitoring_hiu_paus${new Date().toISOString()}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
 
