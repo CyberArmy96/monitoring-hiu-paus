@@ -62,6 +62,7 @@ socket.on('data', (data) => {
     storeData(data);
     updateCharts();
     updateMap(data);
+    updateDataTable(data);
 });
 
 // Event listener saat koneksi terputus
