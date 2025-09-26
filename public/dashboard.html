@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitoring Hiu Paus - Real Time Dashboard</title>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
@@ -17,7 +17,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -246,7 +246,7 @@
         .data-table tbody tr:hover {
             background: #f8f9fa;
         }
-        
+
         .empty-row {
             opacity: 0.3;
             font-style: italic;
@@ -586,6 +586,33 @@
                 </div>
             </div>
             
+            <!-- Acceleration Card -->
+            <div class="card">
+                <div class="card-title">
+                    📐 Percepatan 3-Orientasi
+                </div>
+                <div class="acceleration-grid">
+                    <div class="accel-axis x">
+                        <div class="accel-label">Sumbu-X</div>
+                        <div class="accel-value" id="accelX">0.000</div>
+                        <div class="metric-unit">g</div>
+                    </div>
+                    <div class="accel-axis y">
+                        <div class="accel-label">Sumbu-Y</div>
+                        <div class="accel-value" id="accelY">0.000</div>
+                        <div class="metric-unit">g</div>
+                    </div>
+                    <div class="accel-axis z">
+                        <div class="accel-label">Sumbu-Z</div>
+                        <div class="accel-value" id="accelZ">0.000</div>
+                        <div class="metric-unit">g</div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="accelChart"></canvas>
+                </div>
+            </div>
+
             <!-- Depth Card -->
             <div class="card">
                 <div class="card-title">
@@ -672,11 +699,14 @@
             temperature: [],
             dissolvedOxygen: [],
             pressure: [],
-            depth: []
+            depth: [],
+            accelX: [],
+            accelY: [],
+            accelZ: []
         };
         
         // Chart instances
-        let speedChart, tempChart, doChart, pressureChart;
+        let speedChart, tempChart, doChart, pressureChart, accelChart;
         
         // Initialize everything on page load
         window.onload = function() {
@@ -852,7 +882,64 @@
                     }
                 }
             });
+
+            // Acceleration Chart (3 axes)
+            accelChart = new Chart(document.getElementById('accelChart'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Sumbu-X',
+                            data: [],
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: false
+                        },
+                        {
+                            label: 'Sumbu-Y',
+                            data: [],
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: false
+                        },
+                        {
+                            label: 'Sumbu-Z',
+                            data: [],
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            ...commonOptions.scales.y,
+                            title: {
+                                display: true,
+                                text: 'Percepatan (g)'
+                            }
+                        }
+                    }
+                }
+            });
         }
+
         // Initialize Leaflet Map
         function initializeMap() {
             // Default center (Indonesia)
@@ -974,6 +1061,11 @@
             document.getElementById('doValue').textContent = data.dissolved_oxygen?.toFixed(1) || '0.0';
             document.getElementById('pressureValue').textContent = data.pressure?.toFixed(1) || '0.0';
             document.getElementById('depthValue').textContent = data.depth?.toFixed(1) || '0.0';
+
+            // Update acceleration values
+            document.getElementById('accelX').textContent = data.acceleration?.x?.toFixed(3) || '0.000';
+            document.getElementById('accelY').textContent = data.acceleration?.y?.toFixed(3) || '0.000';
+            document.getElementById('accelZ').textContent = data.acceleration?.z?.toFixed(3) || '0.000';
             
             // Update location info
             document.getElementById('latitude').textContent = data.location?.lat?.toFixed(6) || '--';
@@ -1008,6 +1100,9 @@
             historicalData.dissolvedOxygen.push(data.dissolved_oxygen || 0);
             historicalData.pressure.push(data.pressure || 0);
             historicalData.depth.push(data.depth || 0);
+            historicalData.accelX.push(data.acceleration?.x || 0);
+            historicalData.accelY.push(data.acceleration?.y || 0);
+            historicalData.accelZ.push(data.acceleration?.z || 0);
             
             // Limit data points
             if (historicalData.timestamps.length > MAX_DATA_POINTS) {
@@ -1038,6 +1133,15 @@
             pressureChart.data.labels = historicalData.timestamps;
             pressureChart.data.datasets[0].data = historicalData.pressure;
             pressureChart.update('none');
+
+            // Update acceleration chart
+            if (accelChart) {
+                accelChart.data.labels = historicalData.timestamps;
+                accelChart.data.datasets[0].data = historicalData.accelX;
+                accelChart.data.datasets[1].data = historicalData.accelY;
+                accelChart.data.datasets[2].data = historicalData.accelZ;
+                accelChart.update('none');
+            }
         }
         
         // Update map with GPS location
@@ -1256,14 +1360,20 @@
                 pressure: -20 + Math.random() * 4 - 2,
                 depth: Math.random() * 10,
                 speed_cms: 20 + Math.random() * 40,
+                quality: Math.floor(70 + Math.random() * 30),
+                pump_state: Math.random() > 0.7,
+
+                acceleration: {
+                    x: (Math.random() - 0.5) * 0.5,
+                    y: (Math.random() - 0.5) * 0.5,
+                    z: 0.98 + (Math.random() - 0.5) * 0.1
+                },
+
                 location: {
                     lat: -7.797068 + (Math.random() - 0.5) * 0.01,
                     lon: 110.370529 + (Math.random() - 0.5) * 0.01,
                     satellites: Math.floor(5 + Math.random() * 5)
                 },
-
-                quality: Math.floor(70 + Math.random() * 30),
-                pump_state: Math.random() > 0.7
             };
             
             return demoData;
