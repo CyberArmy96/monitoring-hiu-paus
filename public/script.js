@@ -1,6 +1,4 @@
-// ============================================
-// KONFIGURASI GLOBAL
-// ============================================
+// GLOBAL CONFIGURATION
 const CONFIG = {
     maxDataPoints: 50,
     mapDefaultLat: -7.797068,
@@ -10,9 +8,7 @@ const CONFIG = {
     chartTension: 0.4
 };
 
-// ============================================
 // STATE MANAGEMENT
-// ============================================
 let state = {
     connected: false,
     mqttClient: null,
@@ -42,9 +38,7 @@ let state = {
     }
 };
 
-// ============================================
 // MQTT CONFIGURATION
-// ============================================
 const MQTT_CONFIG = {
     broker: 'your-broker.hivemq.cloud',
     port: 8884,
@@ -55,9 +49,7 @@ const MQTT_CONFIG = {
     clientId: 'web_' + Math.random().toString(16).substr(2, 8)
 };
 
-// ============================================
 // INITIALIZATION
-// ============================================
 window.onload = function() {
     initializeSystem();
 };
@@ -71,9 +63,7 @@ function initializeSystem() {
     setupEventListeners();
 }
 
-// ============================================
 // MQTT CONNECTION
-// ============================================
 function connectMQTT() {
     if (typeof Paho === 'undefined') {
         console.error('Paho MQTT library not loaded');
@@ -139,9 +129,7 @@ function onMessageArrived(message) {
     }
 }
 
-// ============================================
 // DATA PROCESSING
-// ============================================
 function processIncomingData(data) {
     updateDashboard(data);
     storeData(data);
@@ -171,9 +159,7 @@ function storeData(data) {
     }
 }
 
-// ============================================
 // UI UPDATES
-// ============================================
 function updateDashboard(data) {
     const updates = {
         'deviceId': data.device_id || 'FISH_MON_001',
@@ -229,9 +215,7 @@ function updateTimestamp() {
     }
 }
 
-// ============================================
 // CHARTS
-// ============================================
 function initializeCharts() {
     const chartConfig = {
         responsive: true,
@@ -344,9 +328,7 @@ function updateCharts() {
     }
 }
 
-// ============================================
 // MAP
-// ============================================
 function initializeMap() {
     const mapElement = document.getElementById('map');
     if (!mapElement) return;
@@ -396,9 +378,7 @@ function updateMap(data) {
     }
 }
 
-// ============================================
 // TABLE
-// ============================================
 function initializeTable() {
     const tableBody = document.getElementById('dataTableBody');
     if (!tableBody) return;
@@ -444,9 +424,7 @@ function updateTable(data) {
     setTimeout(() => newRow.classList.remove('new-data-row'), 1000);
 }
 
-// ============================================
 // ALERTS
-// ============================================
 function checkAlerts(data) {
     const alerts = [];
 
@@ -490,9 +468,7 @@ function showAlert(message, type = 'info') {
     }, 5000);
 }
 
-// ============================================
 // EVENT LISTENERS
-// ============================================
 function setupEventListeners() {
     const reconnectBtn = document.getElementById('reconnectBtn');
     if (reconnectBtn) {
@@ -517,9 +493,7 @@ function setupEventListeners() {
     }
 }
 
-// ============================================
 // CONTROL FUNCTIONS
-// ============================================
 function exportData() {
     let csv = 'Timestamp,Speed(cm/s),Temperature(°C),DO(mg/L),Pressure(kPa),Depth(m),AccelX(g),AccelY(g),AccelZ(g)\n';
 
@@ -580,17 +554,13 @@ function emergencyRelease() {
     }
 }
 
-// ============================================
 // UTILITIES
-// ============================================
 function formatNumber(value, decimals) {
     if (value === null || value === undefined) return '--';
     return Number(value).toFixed(decimals);
 }
 
-// ============================================
-// DEMO MODE (Development Only)
-// ============================================
+// DEMO MODE
 function generateDemoData() {
     return {
         device_id: "Adinda_Putri",

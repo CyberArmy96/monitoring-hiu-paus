@@ -1,6 +1,4 @@
-// ============================================
 // DEPENDENCIES
-// ============================================
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -9,9 +7,7 @@ const { Client } = require('pg');
 const path = require('path');
 require('dotenv').config();
 
-// ============================================
 // CONFIGURATION
-// ============================================
 const CONFIG = {
     mqtt: {
         broker: process.env.MQTT_BROKER || 'b8ae5c3ad3484c4fa485c54ae6eb8ca2.s1.eu.hivemq.cloud',
@@ -31,9 +27,7 @@ const CONFIG = {
     }
 };
 
-// ============================================
 // INITIALIZATION
-// ============================================
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -46,9 +40,7 @@ const io = socketIo(server, {
 const dbClient = new Client(CONFIG.database);
 const mqttClient = mqtt.connect(CONFIG.mqtt.broker, CONFIG.mqtt.options);
 
-// ============================================
 // DATABASE CONNECTION
-// ============================================
 async function connectDatabase() {
     try {
         await dbClient.connect();
@@ -94,9 +86,7 @@ async function initializeDatabase() {
     }
 }
 
-// ============================================
 // MQTT CONNECTION
-// ============================================
 mqttClient.on('connect', () => {
     console.log('✅ Connected to MQTT broker');
     
@@ -131,9 +121,7 @@ mqttClient.on('message', async (topic, message) => {
     }
 });
 
-// ============================================
 // DATA PROCESSING
-// ============================================
 async function processData(message) {
     try {
         const data = JSON.parse(message.toString());
@@ -225,9 +213,7 @@ function broadcastToClients(data) {
     console.log(`📡 Broadcasted to ${io.engine.clientsCount} clients`);
 }
 
-// ============================================
 // ALERT SYSTEM
-// ============================================
 function checkAlerts(data) {
     const alerts = [];
 
@@ -294,9 +280,7 @@ async function logAlerts(alerts, deviceId) {
     }
 }
 
-// ============================================
 // COMMAND HANDLING
-// ============================================
 function handleCommand(message) {
     try {
         const command = JSON.parse(message.toString());
@@ -353,9 +337,7 @@ function handleCalibration(sensor, value) {
     console.log(`🔧 Calibration command sent for ${sensor}`);
 }
 
-// ============================================
 // WEB SOCKET CONNECTION
-// ============================================
 io.on('connection', (socket) => {
     console.log(`👤 Client connected: ${socket.id}`);
 
@@ -378,9 +360,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// ============================================
 // API ENDPOINTS
-// ============================================
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
@@ -459,9 +439,7 @@ app.get('/api/data/statistics', async (req, res) => {
     }
 });
 
-// ============================================
 // HELPER FUNCTIONS
-// ============================================
 async function getHistoricalData(params = {}) {
     const { limit = 50, device_id } = params;
     
@@ -483,9 +461,7 @@ async function getHistoricalData(params = {}) {
     }
 }
 
-// ============================================
 // SERVER STARTUP
-// ============================================
 async function startServer() {
     await connectDatabase();
     
@@ -495,9 +471,7 @@ async function startServer() {
     });
 }
 
-// ============================================
 // ERROR HANDLING
-// ============================================
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
 });
@@ -516,7 +490,5 @@ process.on('SIGTERM', async () => {
     });
 });
 
-// ============================================
-// START APPLICATION
-// ============================================
+// START SERVER
 startServer();

@@ -277,18 +277,19 @@
             border-collapse: collapse;
         }
 
-        .data-table th,
         .data-table td {
             padding: 12px;
-            text-align: left;
+            text-align: center;
             vertical-align: middle;
             border-bottom: 1px solid #e0e0e0;
         }
 
-        .data-table th {
+        .data-table th{
             background: #f5f5f5;
-            font-weight: 600;
+            font-weight: bold;
             color: #2c3e50;
+            padding: 12px;
+            text-align: center;
         }
 
         .data-table tbody tr:hover {
@@ -903,7 +904,7 @@
                     y: {
                         display: true,
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
+                            color: 'rgba(0, 0, 0, 0.1)'
                         }
                     }
                 },
@@ -1067,27 +1068,18 @@
                 },
                 options: {
                     ...commonOptions,
-                    plugins: {
-                        legend: {
-                            display: false,
-                            position: 'bottom',
-                            labels: {
-                                color: '#a0aec0',
-                                usePointStyle: true,
-                                boxWidth: 8
-                            }
-                        }
-                    },
                     scales: {
                         ...commonOptions.scales,
                         y: {
                             ...commonOptions.scales.y,
-                            title: { display: true, text: '(g)' },
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                            title: {
+                                display: true,
+                                text: '(g)' 
+                            },
                         },
+                        
                         x: {
                             ...commonOptions.scales.x,
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
                         }
                     }
                 }
