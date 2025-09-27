@@ -27,6 +27,8 @@
         }
         
         .container {
+            padding-left: 16px;
+            padding-right: 16px;
             max-width: 1400px;
             margin: 0 auto;
         }
@@ -35,7 +37,7 @@
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             padding: 30px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.1);
             backdrop-filter: blur(10px);
         }
@@ -81,12 +83,6 @@
             gap: 8px;
             color: #7f8c8d;
             font-size: 0.95em;
-        }
-        
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
         }
         
         .card {
@@ -229,7 +225,7 @@
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            margin-bottom: 50px;
         }
 
         .control-buttons {
@@ -737,7 +733,7 @@
 
                     <tbody id="dataTableBody">
                     </tbody>
-                    
+
                 </table>
             </div>
         </div>
@@ -762,17 +758,19 @@
 
     <script>
         // Configuration
-        const MQTT_BROKER = 'http://b8ae5c3ad3484c4fa485c54ae6eb8ca2.s1.eu.hivemq.cloud';
+        const MQTT_BROKER = 'b8ae5c3ad3484c4fa485c54ae6eb8ca2.s1.eu.hivemq.cloud';
         const MQTT_PORT = 8884;
         const MQTT_USERNAME = 'hiupaus';
         const MQTT_PASSWORD = 'HiuPaus123';
         const MQTT_USE_SSL = true;
         const MQTT_TOPIC = 'fish/monitor/data';
         const MAX_DATA_POINTS = 50;
+        const MAX_RECONNECT_ATTEMPTS = 10;
         
         // Global variables
         let mqttClient = null;
         let connected = false;
+        let reconnectAttempts = 0;
         let map = null;
         let marker = null;
         let pathLine = null;
@@ -789,6 +787,12 @@
             accelX: [],
             accelY: [],
             accelZ: []
+        };
+
+        let performanceMetrics = {
+            lastUpdate: Date.now(),
+            updateCount: 0,
+            errors: 0
         };
         
         // Chart instances
@@ -812,7 +816,52 @@
             initializeEmptyTable();
             connectMQTT();
             updateTimestamp();
+            setInterval(cleanupOldData, 60000);
         };
+
+        function monitorPerformance() {
+            const now = Date.now();
+            const timeSinceLastUpdate = now - performanceMetrics.lastUpdate;
+    
+            if (timeSinceLastUpdate > 30000 && connected) { // 30 seconds
+                console.warn('No data received for 30 seconds');
+                showAlert('Connection seems slow or interrupted', 'warning');
+            }
+    
+            if (performanceMetrics.errors > 10) {
+                console.error('Too many errors detected');
+                showAlert('System experiencing issues. Please refresh.', 'danger');
+            }
+        }
+
+        // Tambahkan wrapper untuk semua fungsi chart
+        function safeUpdateChart(chart, data) {
+            try {
+                if (chart && chart.data) {
+                    chart.data.labels = data.labels;
+                    chart.data.datasets.forEach((dataset, i) => {
+                        if (data.datasets[i]) {
+                            dataset.data = data.datasets[i];
+                        }
+                    });
+                    chart.update('none');
+                }
+            } catch (error) {
+                console.error('Chart update error:', error);
+            }
+        }
+
+        // Wrap semua DOM operations
+        function safeUpdateElement(id, value, fallback = '--') {
+            try {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value ?? fallback;
+                }
+            } catch (error) {
+                console.error(`Error updating ${id}:`, error);
+            }
+        }
         
         function initializeEmptyTable() {
             const tableBody = document.getElementById('dataTableBody');
@@ -1063,6 +1112,25 @@
                 smoothFactor: 1
             }).addTo(map);
         }
+
+        // Clear old data lebih agresif
+        function cleanupOldData() {
+            if (historicalData.timestamps.length > MAX_DATA_POINTS) {
+                const excess = historicalData.timestamps.length - MAX_DATA_POINTS;
+                Object.keys(historicalData).forEach(key => {
+                    historicalData[key].splice(0, excess);
+                });
+            }
+    
+            // Clear old path coordinates
+            if (pathCoordinates.length > 200) {
+                pathCoordinates = pathCoordinates.slice(-100);
+                pathLine.setLatLngs(pathCoordinates);
+            }
+        }
+
+        // Cleanup timer
+        setInterval(cleanupOldData, 60000); // Every minute
         
         function connectMQTT() {
             if (typeof Paho === 'undefined' || !Paho.MQTT) {
@@ -1096,8 +1164,23 @@
                 showAlert('Failed to initialize MQTT connection', 'danger');
             }
         }
+
+        function connectWithBackoff() {
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                showAlert('Max reconnection attempts reached. Please refresh page.', 'danger');
+                return;
+            }
+    
+            const backoffTime = Math.min(30000, Math.pow(2, reconnectAttempts) * 1000);
+            reconnectAttempts++;
+    
+            setTimeout(() => {
+                connectMQTT();
+            }, backoffTime);
+        }
         
         function onConnect() {
+            reconnectAttempts = 0;
             console.log('Connected to MQTT broker');
             connected = true;
             updateConnectionStatus(true);
@@ -1132,7 +1215,8 @@
         
         function onMessageArrived(message) {
             try {
-                const data = JSON.parse(message.payloadString);
+                const rawData = JSON.parse(message.payloadString);
+                const data = validateIncomingData(rawData);
                 console.log('Data received:', data);
                 
                 // Update UI with new data
@@ -1142,7 +1226,7 @@
                 storeData(data);
                 
                 // Update charts
-                updateCharts();
+                debouncedChartUpdate();
                 
                 // Update map
                 updateMap(data);
@@ -1156,6 +1240,76 @@
             } catch (error) {
                 console.error('Error processing message:', error);
             }
+        }
+
+        function validateIncomingData(data) {
+            const valid = {
+                device_id: data.device_id || 'UNKNOWN',
+                timestamp: data.timestamp || Date.now() / 1000,
+                temperature: validateNumber(data.temperature, 0, 50, 25),
+                dissolved_oxygen: validateNumber(data.dissolved_oxygen, 0, 20, 7),
+                pressure: validateNumber(data.pressure, -50, 50, -20),
+                depth: validateNumber(data.depth, 0, 100, 0),
+                speed_cms: validateNumber(data.speed_cms, 0, 200, 0),
+                quality: validateNumber(data.quality, 0, 100, 50),
+                pump_state: Boolean(data.pump_state),
+                acceleration: {
+                    x: validateNumber(data.acceleration?.x, -5, 5, 0),
+                    y: validateNumber(data.acceleration?.y, -5, 5, 0),
+                    z: validateNumber(data.acceleration?.z, -5, 5, 1)
+                },
+                location: {
+                    lat: validateNumber(data.location?.lat, -90, 90, 0),
+                    lon: validateNumber(data.location?.lon, -180, 180, 0),
+                    satellites: validateNumber(data.location?.satellites, 0, 20, 0)
+                }
+            };
+            return valid;
+        }
+
+        function validateNumber(value, min, max, defaultValue) {
+            const num = parseFloat(value);
+            if (isNaN(num) || num < min || num > max) {
+                return defaultValue;
+            }
+            return num;
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Apply to chart updates
+        const debouncedChartUpdate = debounce(updateCharts, 500);
+
+        function formatNumber(value, decimals) {
+            if (value === null || value === undefined) return '--';
+            return Number(value).toFixed(decimals);
+        }
+
+        function getCurrentTimestamp() {
+            return new Date().toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit', 
+                second: '2-digit'
+            });
+        }
+
+        function isValidCoordinate(lat, lon) {
+            return lat !== null && 
+                lon !== null && 
+                !isNaN(lat) && 
+                !isNaN(lon) &&
+                lat >= -90 && lat <= 90 &&
+                lon >= -180 && lon <= 180;
         }
         
         // Update dashboard with new data
@@ -1374,51 +1528,84 @@
         }
         
         // Show alert message
-        function showAlert(message, type = 'warning') {
-            const alertsContainer = document.getElementById('alertsContainer');
-            
+        const alertQueue = [];
+        let isShowingAlert = false;
+
+        function showAlert(message, type = 'info', duration = 5000) {
+            alertQueue.push({ message, type, duration });
+            processAlertQueue();
+        }
+
+        function processAlertQueue() {
+            if (isShowingAlert || alertQueue.length === 0) return;
+    
+            isShowingAlert = true;
+            const { message, type, duration } = alertQueue.shift();
+    
+            const container = document.getElementById('alertsContainer');
             const alert = document.createElement('div');
             alert.className = `alert alert-${type}`;
-            alert.innerHTML = message;
-            
-            alertsContainer.insertBefore(alert, alertsContainer.firstChild);
-            
-            // Remove old alerts
-            while (alertsContainer.children.length > 3) {
-                alertsContainer.removeChild(alertsContainer.lastChild);
-            }
-            
-            // Auto remove after 5 seconds
+            alert.textContent = message;
+    
+            container.appendChild(alert);
+    
             setTimeout(() => {
-                if (alert.parentNode) {
-                    alert.parentNode.removeChild(alert);
-                }
-            }, 5000);
+                alert.style.opacity = '0';
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.parentNode.removeChild(alert);
+                    }
+                    isShowingAlert = false;
+                    processAlertQueue();
+                }, 300);
+            }, duration);
         }
         
         // Control functions
         function exportData() {
-            // Create CSV data
-            let csv = 'Waktu, Kecepatan (cm/s), Suhu (°C), Kadar Oksigen (mg/L), Daya Hisap (kPa), Kedalaman (m), Percepatan-X (g), Percepatan-Y (g), Percepatan-Z (g)\n';
-            
-            for (let i = 0; i < historicalData.timestamps.length; i++) {
-                csv += `${historicalData.timestamps[i]},`;
-                csv += `${historicalData.speed[i]?.toFixed(2)},`;
-                csv += `${historicalData.temperature[i]?.toFixed(2)},`;
-                csv += `${historicalData.dissolvedOxygen[i]?.toFixed(2)},`;
-                csv += `${historicalData.pressure[i]?.toFixed(2)},`;
-                csv += `${historicalData.depth[i]?.toFixed(2)},`;
+            try {
+                let csv = 'Timestamp,Device ID,Speed(cm/s),Temperature(°C),DO(mg/L),Pressure(kPa),Depth(m),AccelX(g),AccelY(g),AccelZ(g),Latitude,Longitude,Quality(%)\n';
+        
+                for (let i = 0; i < historicalData.timestamps.length; i++) {
+                    const row = [
+                        historicalData.timestamps[i],
+                        document.getElementById('deviceId').textContent,
+                        historicalData.speed[i]?.toFixed(2) || '0',
+                        historicalData.temperature[i]?.toFixed(2) || '0',
+                        historicalData.dissolvedOxygen[i]?.toFixed(2) || '0',
+                        historicalData.pressure[i]?.toFixed(2) || '0',
+                        historicalData.depth[i]?.toFixed(2) || '0',
+                        historicalData.accelX[i]?.toFixed(3) || '0',
+                        historicalData.accelY[i]?.toFixed(3) || '0',
+                        historicalData.accelZ[i]?.toFixed(3) || '0',
+                        '0', // Placeholder untuk latitude
+                        '0', // Placeholder untuk longitude
+                        '100' // Placeholder untuk quality
+                    ];
+                    csv += row.join(',') + '\n';
+                }
+        
+                // Add BOM for Excel UTF-8 compatibility
+                const BOM = '\uFEFF';
+                const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+        
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+        
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                a.download = `monitoring_hiu_paus${timestamp}.csv`;
+        
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+        
+                showAlert('Data diekspor!', 'success');
+            } catch (error) {
+                console.error('Export error:', error);
+                showAlert('Gagal mengekspor data', 'danger');
             }
-            
-            // Download file
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `monitoring_hiu_paus_${new Date().toISOString()}.csv`;
-            a.click();
-            
-            showAlert('Data Diekspor!', 'success');
         }
         
         function clearCharts() {
@@ -1497,6 +1684,13 @@
                 updateDataTable(demoData);
             }, 1000);
         }
+
+        window.addEventListener('resize', debounce(() => {
+            [speedChart, tempChart, doChart, pressureChart, accelChart].forEach(chart => {
+            if (chart) chart.resize();
+            });
+            if (map) map.invalidateSize();
+        }, 250));
 
         startDemoMode();
     </script>

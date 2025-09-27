@@ -14,7 +14,7 @@ require('dotenv').config();
 // ============================================
 const CONFIG = {
     mqtt: {
-        broker: process.env.MQTT_BROKER || 'http://b8ae5c3ad3484c4fa485c54ae6eb8ca2.s1.eu.hivemq.cloud',
+        broker: process.env.MQTT_BROKER || 'b8ae5c3ad3484c4fa485c54ae6eb8ca2.s1.eu.hivemq.cloud',
         topic: process.env.MQTT_TOPIC || 'monitor/hiu-paus/data',
         options: {
             username: process.env.MQTT_USERNAME || undefined,
